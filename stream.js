@@ -31,15 +31,30 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 						"Access-Control-Allow-Origin": "*"
 					});
 				
-					var f = function() {
-						response.write("data: " + Date.now() + "\n\n");
-						timeoutId = setTimeout(f, 1000);
-					};
-				
-					f();
-				
+					db.collection("push_actions", function(err, collection) {
+						if (err) {
+							return;
+						}
+
+						var filter = {};
+						
+						// Set MongoDB cursor options
+						var cursorOptions = {
+							tailable: true,
+							awaitdata: true,
+							numberOfRetries: -1
+						};
+						
+						// Create stream and listen
+						var stream = collection.find(filter, cursorOptions).stream();
+								
+						// call the callback
+						stream.on("data", function(doc) {
+							response.write("data: " + JSON.stringify(doc) + "\n\n");
+						});
+					});
+					
 					response.on("close", function () {
-						clearTimeout(timeoutId);
 					});
 				}).listen(port);
 			}
