@@ -27,6 +27,8 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 					else {
 						db = dbConnection;
 						
+						var port = config.ports["aiota-stream"][0];
+
 						http.createServer(function (request, response) {
 							response.writeHead(200, {
 								"Content-Type": "text/event-stream",
