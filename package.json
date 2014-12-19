@@ -1,0 +1,30 @@
+{
+	"name": "aiota-stream",
+	"version": "0.0.1",
+	"description": "AiotA Server-sent Events Micro Process",
+	"main": "stream.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/aiota/stream.git"
+	},
+	"author": "Arthur Viegers <arthur@mongodb.com>",
+	"contributors": [
+		{
+			"name": [ "AiotA Team" ],
+			"email": [ "arthur@mongodb.com", "pattyn.kurt@gmail.com" ]
+		}
+	],
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://github.com/aiota/session/LICENSE"
+		}
+	],
+  	"dependencies": {
+		"aiota-utils": ">=0.0.1",
+		"mongodb": ">=1.4.10"
+	},
+	"bugs": {
+		"url": "https://github.com/iota/issues"
+	}
+}
