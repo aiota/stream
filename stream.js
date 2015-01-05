@@ -113,8 +113,8 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 																
 																var nonce = 0;
 					
-																aiota.respond(null, queryData.deviceId, { group: "response", type: "stream" }, doc.encryption.method, queryData.tokencardId, appl.tokens, nonce, action, function(response) {
-																	response.write("data: " + JSON.stringify(response) + "\n\n");
+																aiota.respond(null, queryData.deviceId, { group: "response", type: "stream" }, doc.encryption.method, queryData.tokencardId, appl.tokens, nonce, action, function(msg) {
+																	response.write("data: " + JSON.stringify(msg) + "\n\n");
 																});
 					
 																//process.nextTick(updateActions);		
