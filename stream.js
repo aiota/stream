@@ -106,9 +106,9 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 															}
 										
 															if (sendToDevice) {
-																var action = { action: actions[i]["action"], requestId: actions[i]["requestId"] };
-																if (actions[i].hasOwnProperty("params")) {
-																	action["params"] = actions[i].params;
+																var action = { action: doc.action, requestId: doc.requestId };
+																if (doc.hasOwnProperty("params")) {
+																	action["params"] = doc.params;
 																}
 																
 																var nonce = 0;
