@@ -67,7 +67,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 								});
 							
 								// Do initial long polling request
-								longPollingRequest(queryData.deviceId, queryData.tokencardId, function(result) {
+								longpollingRequest(queryData.deviceId, queryData.tokencardId, function(result) {
 									response.write("data: " + JSON.stringify(result) + "\n\n");
 								});
 								
