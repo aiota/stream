@@ -40,10 +40,10 @@ function longpollingRequest(deviceId, tokencardId, callback)
 }
 
 function constructSSE(response, deviceId, tokencardId) {
-	longpollingRequest(deviceId, tokencardId, function(response) {
+	longpollingRequest(deviceId, tokencardId, function(result) {
 		var d = new Date();
         response.write("id: " + d.getMilliseconds() + "\n");
-		response.write("data: " + JSON.stringify(response) + "\n\n");
+		response.write("data: " + JSON.stringify(result) + "\n\n");
 	});
 }
 
