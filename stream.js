@@ -85,6 +85,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 									bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 										queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
 											console.log(msg);
+											queue.shift();
 										});
 									});
 								});
