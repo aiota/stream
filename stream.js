@@ -6,10 +6,17 @@ var amqprpc = require("amqp-rpc");
 var MongoClient = require("mongodb").MongoClient;
 
 var config = null;
+var rpc = null;
+
 //var db = null;
 
 function longpollingRequest(deviceId, tokencardId, callback)
 {
+	if (rpc == null) {
+		callback([]);
+		return;
+	}
+
 	var obj = {
 		header: {
 			requestId: "streamReq",
@@ -45,7 +52,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 			else {
 				config = c;
 
-				var rpc = amqprpc.factory({ url: "amqp://" + config.amqp.login + ":" + config.amqp.password + "@" + config.amqp.host + ":" + config.amqp.port });
+				rpc = amqprpc.factory({ url: "amqp://" + config.amqp.login + ":" + config.amqp.password + "@" + config.amqp.host + ":" + config.amqp.port });
 /*
 				MongoClient.connect("mongodb://" + config.database.host + ":" + config.ports.mongodb + "/" + config.database.name, function(err, dbConnection) {
 					if (err) {

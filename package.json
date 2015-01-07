@@ -1,6 +1,6 @@
 {
 	"name": "aiota-stream",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"description": "AiotA Server-sent Events Micro Process",
 	"main": "stream.js",
 	"repository": {
