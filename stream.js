@@ -8,7 +8,7 @@ var MongoClient = require("mongodb").MongoClient;
 
 var config = null;
 var rpc = null;
-
+var buffer = false;
 //var db = null;
 
 function longpollingRequest(deviceId, tokencardId, callback)
@@ -39,6 +39,11 @@ function longpollingRequest(deviceId, tokencardId, callback)
 	});
 }
 
+function constructSSE(res, id, data) {
+  res.write('id: ' + id + '\n');
+  res.write("data: " + data + '\n\n');
+}
+
 var args = process.argv.slice(2);
  
 MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], function(err, aiotaDB) {
@@ -67,28 +72,26 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 							response.writeHead(200, {
 								"Content-Type": "text/event-stream",
 								"Cache-Control": "no-cache",
+								"Connection": "keep-alive",
 								"Access-Control-Allow-Origin": "*"
 							});
 						
-							// Do initial long polling request
-							longpollingRequest(queryData.deviceId, queryData.tokencardId, function(result) {
-								response.write("data: " + JSON.stringify(result) + "\n\n");
-							});
-				
+							var id = (new Date()).toLocaleTimeString();
+							
 							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
-									longpollingRequest(queryData.deviceId, queryData.tokencardId, function(result) {
-										response.write("data: " + JSON.stringify(result) + "\n\n");
-										queue.shift();
-									});
+									constructSSE(response, id, (new Date()).toLocaleTimeString());
 								});
 							});
-				
-							response.on("close", function () {
-							});
+							
+							constructSSE(response, id, (new Date()).toLocaleTimeString());
 						}
+
+						response.on("close", function () {
+						});
 					}).listen(port);
 	
+/*
 					setInterval(function() { aiota.heartbeat(path.basename(__filename), config.server, aiotaDB); }, 10000);
 	
 					process.on("SIGTERM", function() {
@@ -96,6 +99,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 							process.exit(1);
 						});
 					});
+*/
 				});
 			}
 		});
