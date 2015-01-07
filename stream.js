@@ -39,14 +39,12 @@ function longpollingRequest(deviceId, tokencardId, callback)
 	});
 }
 
-function constructSSE(response) {
-	if (respnse.socket._handle == null) {
-		console.log("Handle is null!");
-		setTimeout(function() { constructSSE(response) }, 1000);
-		return;
-	}
-
-	response.write("data: " + Date.now() + "\n\n");
+function constructSSE(response, deviceId, tokencardId) {
+	longpollingRequest(deviceId, tokencardId, function(response) {
+		if (!response.write("data: " + JSON.stringify(response) + "\n\n")) {
+			console.log("Write false");
+		}
+	});
 }
 
 var args = process.argv.slice(2);
@@ -89,8 +87,8 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 							
 							constructSSE(response);
 						}
-
-						response.on("close", function () {
+						
+						response.on("close", function() {
 						});
 					}).listen(port);
 	
