@@ -36,7 +36,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 						http.createServer(function (request, response) {
 							var queryData = url.parse(request.url, true).query;
 
-							if (queryData.hasOwnProperty("deviceId") && queryData.hasOwnProperty("tokencardId") {
+							if (queryData.hasOwnProperty("deviceId") && queryData.hasOwnProperty("tokencardId")) {
 								response.writeHead(200, {
 									"Content-Type": "text/event-stream",
 									"Cache-Control": "no-cache",
