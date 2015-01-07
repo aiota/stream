@@ -2,6 +2,7 @@ var aiota = require("aiota-utils");
 var path = require("path");
 var http = require("http");
 var url = require("url");
+var amqp = require("amqp");
 var amqprpc = require("amqp-rpc");
 var MongoClient = require("mongodb").MongoClient;
 
@@ -78,6 +79,15 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 									response.write("data: " + JSON.stringify(result) + "\n\n");
 								});
 								
+								var bus = amqp.createConnection(config.amqp);
+								
+								bus.on("ready", function() {
+									bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
+										queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
+											console.log(msg);
+										});
+									});
+								});
 /*
 								db.collection("applications", function(err, collection) {
 									if (err) {
