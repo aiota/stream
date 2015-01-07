@@ -8,6 +8,29 @@ var MongoClient = require("mongodb").MongoClient;
 var config = null;
 //var db = null;
 
+function longpollingRequest(deviceId, tokencardId, callback)
+{
+	var obj = {
+		header: {
+			requestId: "streamReq",
+			deviceId: deviceId,
+			type: "poll",
+			timestamp: Date.now(),
+			ttl: 86400,
+			encryption: {
+				method: "aes-256-gcm",
+				tokencardId: tokencardId
+			}
+		},
+		body: { timeout: 0 },
+		nonce: 0
+	};
+
+	rpc.call("longpolling-queue", obj, function(result) {
+		callback(result);
+	});
+}
+
 var args = process.argv.slice(2);
  
 MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], function(err, aiotaDB) {
@@ -43,27 +66,11 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 									"Access-Control-Allow-Origin": "*"
 								});
 							
-								var obj = {
-									header: {
-										requestId: "testReqId",
-										deviceId: queryData.deviceId,
-										type: "poll",
-										timestamp: Date.now(),
-										ttl: 86400,
-										encryption: {
-											method: "aes-256-gcm",
-											tokencardId: queryData.tokencardId
-										}
-									},
-									body: { timeout: 0 },
-									nonce: 0
-								};
-
-								rpc.call("longpolling-queue", obj, function(result) {
-									console.log(result);
+								// Do initial long polling request
+								longPollingRequest(queryData.deviceId, queryData.tokencardId, function(result) {
 									response.write("data: " + JSON.stringify(result) + "\n\n");
 								});
-
+								
 /*
 								db.collection("applications", function(err, collection) {
 									if (err) {
