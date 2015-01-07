@@ -89,6 +89,11 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 							
 							constructSSE(response, queryData.deviceId, queryData.tokencardId);
 						}
+						
+						response.on("close", function() {
+							console.log("close!");
+							response.end();
+						});
 					}).listen(port);
 	
 /*
