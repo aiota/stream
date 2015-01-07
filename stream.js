@@ -41,9 +41,9 @@ function longpollingRequest(deviceId, tokencardId, callback)
 
 function constructSSE(response, deviceId, tokencardId) {
 	longpollingRequest(deviceId, tokencardId, function(response) {
-		if (!response.write("data: " + JSON.stringify(response) + "\n\n")) {
-			console.log("Write false");
-		}
+		var d = new Date();
+        response.write("id: " + d.getMilliseconds() + "\n");
+		response.write("data: " + JSON.stringify(response) + "\n\n");
 	});
 }
 
@@ -78,6 +78,8 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 								"Access-Control-Allow-Origin": "*"
 							});
 						
+							response.write("\n");
+	
 							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
 									constructSSE(response, queryData.deviceId, queryData.tokencardId);
