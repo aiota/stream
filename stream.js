@@ -9,7 +9,8 @@ var MongoClient = require("mongodb").MongoClient;
 var config = null;
 var rpc = null;
 var buffer = false;
-//var db = null;
+
+var openConnections = [];
 
 function longpollingRequest(deviceId, tokencardId, callback)
 {
@@ -39,11 +40,22 @@ function longpollingRequest(deviceId, tokencardId, callback)
 	});
 }
 
-function constructSSE(response, deviceId, tokencardId) {
+function constructSSE(deviceId, tokencardId)
+{
 	longpollingRequest(deviceId, tokencardId, function(result) {
 		var d = new Date();
-        response.write("id: " + d.getMilliseconds() + "\n");
-		response.write("data: " + JSON.stringify(result) + "\n\n");
+		var response = null;
+		
+		for (var i = 0; i < openConnections.length; ++j) {
+			if ((openConnections[i].deviceId == deviceId) && (openConnections[i].tokencardId == tokencardId)) {
+				response = openConnections[i].response;
+				break;
+			}
+		}
+		
+		if (response) {
+ 			response.write("data: " + JSON.stringify(result) + "\n\n");
+		}
 	});
 }
 
@@ -78,17 +90,32 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 								"Access-Control-Allow-Origin": "*"
 							});
 						
-							response.write("\n");
-	
+							openConnections.push({ deviceId: queryData.deviceId, tokencardId: queryData.tokencardId, response: response });
+ 	
 							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
-									constructSSE(response, queryData.deviceId, queryData.tokencardId);
+									constructSSE(queryData.deviceId, queryData.tokencardId);
 									queue.shift();
 								});
 							});
 							
-							constructSSE(response, queryData.deviceId, queryData.tokencardId);
+							constructSSE(queryData.deviceId, queryData.tokencardId);
 						}
+						
+						response.on("close", function() {
+							var toRemove = -1;
+						
+							for (var j = 0; j < openConnections.length; ++j) {
+								if ((openConnections[j].deviceId == queryData.deviceId) && (openConnections[j].tokencardId == queryData.tokencardId)) {
+									toRemove = j;
+									break;
+								}
+							}
+							
+							if (toRemove >= 0) {
+								openConnections.splice(toRemove, 1);
+							}
+						});
 					}).listen(port);
 	
 /*
