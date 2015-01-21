@@ -59,6 +59,20 @@ function constructSSE(deviceId, tokencardId)
 	});
 }
 
+function getConnectionIndex(deviceId, tokencardId)
+{
+	var index = -1;
+
+	for (var j = 0; j < openConnections.length; ++j) {
+		if ((openConnections[j].deviceId == deviceId) && (openConnections[j].tokencardId == tokencardId)) {
+			index = j;
+			break;
+		}
+	}
+	
+	return index;
+}
+
 var args = process.argv.slice(2);
  
 MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], function(err, aiotaDB) {
@@ -94,8 +108,13 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
  	
 							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
-									constructSSE(queryData.deviceId, queryData.tokencardId);
-									queue.shift();
+									if (getConnectionIndex(queryData.deviceId, queryData.tokencardId) < 0) {
+										queue.destroy();
+									}
+									else {
+										constructSSE(queryData.deviceId, queryData.tokencardId);
+										queue.shift();
+									}
 								});
 							});
 							
@@ -103,15 +122,8 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 						}
 						
 						response.on("close", function() {
-							var toRemove = -1;
+							var toRemove = getConnectionIndex(queryData.deviceId, queryData.tokencardId);
 						
-							for (var j = 0; j < openConnections.length; ++j) {
-								if ((openConnections[j].deviceId == queryData.deviceId) && (openConnections[j].tokencardId == queryData.tokencardId)) {
-									toRemove = j;
-									break;
-								}
-							}
-							
 							if (toRemove >= 0) {
 								openConnections.splice(toRemove, 1);
 							}
