@@ -10,6 +10,7 @@ var ws = require("ws").Server;
 var config = null;
 var rpc = null;
 var buffer = false;
+var bus = null;
 var app = null;
 
 var openConnections = [];
@@ -127,7 +128,7 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 
 				rpc = amqprpc.factory({ url: "amqp://" + config.amqp.login + ":" + config.amqp.password + "@" + config.amqp.host + ":" + config.amqp.port });
 
-				var bus = amqp.createConnection(config.amqp);
+				bus = amqp.createConnection(config.amqp);
 				
 				bus.on("ready", function() {
 					var port = config.ports["aiota-stream"][0];
