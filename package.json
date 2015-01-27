@@ -1,7 +1,7 @@
 {
 	"name": "aiota-stream",
-	"version": "0.0.34",
-	"description": "AiotA Server-sent Events Micro Process",
+	"version": "0.0.35",
+	"description": "AiotA Streaming Micro Process",
 	"main": "stream.js",
 	"repository": {
 		"type": "git",
@@ -24,7 +24,8 @@
 		"aiota-utils": ">=0.0.1",
 		"amqp": ">=0.2.0",
 		"amqp-rpc": ">=0.0.8",
-		"mongodb": ">=1.4.10"
+		"mongodb": ">=1.4.10",
+		"ws": ">=0.7.0"
 	},
 	"bugs": {
 		"url": "https://github.com/iota/issues"

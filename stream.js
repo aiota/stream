@@ -5,10 +5,12 @@ var url = require("url");
 var amqp = require("amqp");
 var amqprpc = require("amqp-rpc");
 var MongoClient = require("mongodb").MongoClient;
+var ws = require("ws").Server;
 
 var config = null;
 var rpc = null;
 var buffer = false;
+var app = null;
 
 var openConnections = [];
 
@@ -73,6 +75,42 @@ function getConnectionIndex(deviceId, tokencardId)
 	return index;
 }
 
+var processRequest = function(request, response) {
+	var queryData = url.parse(request.url, true).query;
+
+	if (queryData.hasOwnProperty("deviceId") && queryData.hasOwnProperty("tokencardId")) {
+		response.writeHead(200, {
+			"Content-Type": "text/event-stream",
+			"Cache-Control": "no-cache",
+			"Access-Control-Allow-Origin": "*"
+		});
+	
+		openConnections.push({ deviceId: queryData.deviceId, tokencardId: queryData.tokencardId, response: response });
+
+		bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
+			queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
+				if (getConnectionIndex(queryData.deviceId, queryData.tokencardId) < 0) {
+					queue.destroy();
+				}
+				else {
+					constructSSE(queryData.deviceId, queryData.tokencardId);
+					queue.shift();
+				}
+			});
+		});
+		
+		constructSSE(queryData.deviceId, queryData.tokencardId);
+	}
+	
+	response.on("close", function() {
+		var toRemove = getConnectionIndex(queryData.deviceId, queryData.tokencardId);
+	
+		if (toRemove >= 0) {
+			openConnections.splice(toRemove, 1);
+		}
+	});
+};
+
 var args = process.argv.slice(2);
  
 MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], function(err, aiotaDB) {
@@ -94,51 +132,15 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 				bus.on("ready", function() {
 					var port = config.ports["aiota-stream"][0];
 						 
-					http.createServer(function (request, response) {
-						var queryData = url.parse(request.url, true).query;
-	
-						if (queryData.hasOwnProperty("deviceId") && queryData.hasOwnProperty("tokencardId")) {
-							response.writeHead(200, {
-								"Content-Type": "text/event-stream",
-								"Cache-Control": "no-cache",
-								"Access-Control-Allow-Origin": "*"
-							});
-						
-							openConnections.push({ deviceId: queryData.deviceId, tokencardId: queryData.tokencardId, response: response });
- 	
-							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
-								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
-									if (getConnectionIndex(queryData.deviceId, queryData.tokencardId) < 0) {
-										queue.destroy();
-									}
-									else {
-										constructSSE(queryData.deviceId, queryData.tokencardId);
-										queue.shift();
-									}
-								});
-							});
-							
-							constructSSE(queryData.deviceId, queryData.tokencardId);
-						}
-						
-						response.on("close", function() {
-							var toRemove = getConnectionIndex(queryData.deviceId, queryData.tokencardId);
-						
-							if (toRemove >= 0) {
-								openConnections.splice(toRemove, 1);
-							}
-						});
-					}).listen(port);
-	
-/*
-					setInterval(function() { aiota.heartbeat(path.basename(__filename), config.server, aiotaDB); }, 10000);
-	
-					process.on("SIGTERM", function() {
-						aiota.terminateProcess(path.basename(__filename), config.server, aiotaDB, function() {
-							process.exit(1);
+					app = http.createServer(processRequest).listen(port);
+
+					var wss = new ws({ server: app });
+					
+					wss.on("connection", function(wsConnect) {
+						wsConnect.on("message", function(msg) {
+							console.log(msg);
 						});
 					});
-*/
 				});
 			}
 		});
