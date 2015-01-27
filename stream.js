@@ -47,17 +47,22 @@ function constructSSE(deviceId, tokencardId)
 {
 	longpollingRequest(deviceId, tokencardId, function(result) {
 		var d = new Date();
-		var response = null;
+		var connection = null;
 		
 		for (var i = 0; i < openConnections.length; ++j) {
 			if ((openConnections[i].deviceId == deviceId) && (openConnections[i].tokencardId == tokencardId)) {
-				response = openConnections[i].response;
+				connection = openConnections[i].connection;
 				break;
 			}
 		}
 		
-		if (response) {
- 			response.write("data: " + JSON.stringify(result) + "\n\n");
+		if (connection) {
+			switch (connection.type) {
+			case "sse":			connection.response.write("data: " + JSON.stringify(result) + "\n\n");
+								break;
+			case "websocket":	connection.response.send(JSON.stringify(result));
+								break;
+			}
 		}
 	});
 }
@@ -86,7 +91,7 @@ var processRequest = function(request, response) {
 			"Access-Control-Allow-Origin": "*"
 		});
 	
-		openConnections.push({ deviceId: queryData.deviceId, tokencardId: queryData.tokencardId, response: response });
+		openConnections.push({ deviceId: queryData.deviceId, tokencardId: queryData.tokencardId, connection: { response: response, type: "sse" } });
 
 		bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 			queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
@@ -139,7 +144,23 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 					
 					wss.on("connection", function(wsConnect) {
 						wsConnect.on("message", function(msg) {
-							console.log(msg);
+							var obj = JSON.parse(msg);
+							
+							openConnections.push({ deviceId: obj.deviceId, tokencardId: obj.tokencardId, connection: { response: wsConnect, type: "websocket" } });
+					
+							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
+								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
+									if (getConnectionIndex(queryData.deviceId, queryData.tokencardId) < 0) {
+										queue.destroy();
+									}
+									else {
+										constructSSE(queryData.deviceId, queryData.tokencardId);
+										queue.shift();
+									}
+								});
+							});
+							
+							constructSSE(queryData.deviceId, queryData.tokencardId);
 						});
 					});
 				});

@@ -1,6 +1,6 @@
 {
 	"name": "aiota-stream",
-	"version": "0.0.36",
+	"version": "0.0.37",
 	"description": "AiotA Streaming Micro Process",
 	"main": "stream.js",
 	"repository": {
