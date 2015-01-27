@@ -148,19 +148,19 @@ MongoClient.connect("mongodb://" + args[0] + ":" + args[1] + "/" + args[2], func
 							
 							openConnections.push({ deviceId: obj.deviceId, tokencardId: obj.tokencardId, connection: { response: wsConnect, type: "websocket" } });
 					
-							bus.queue("push:" + queryData.deviceId + "@" + queryData.tokencardId, { autoDelete: true, durable: false }, function(queue) {
+							bus.queue("push:" + obj.deviceId + "@" + obj.tokencardId, { autoDelete: true, durable: false }, function(queue) {
 								queue.subscribe({ ack: true, prefetchCount: 1 }, function(msg) {
-									if (getConnectionIndex(queryData.deviceId, queryData.tokencardId) < 0) {
+									if (getConnectionIndex(obj.deviceId, obj.tokencardId) < 0) {
 										queue.destroy();
 									}
 									else {
-										constructSSE(queryData.deviceId, queryData.tokencardId);
+										constructSSE(obj.deviceId, obj.tokencardId);
 										queue.shift();
 									}
 								});
 							});
 							
-							constructSSE(queryData.deviceId, queryData.tokencardId);
+							constructSSE(obj.deviceId, obj.tokencardId);
 						});
 					});
 				});
